@@ -1,4 +1,5 @@
 import { cloneTemplate, createELement } from "../functions/dom.js"
+import { getItemFromLocalStorage, setItemToLocalStorage } from "../functions/localStorage.js"
 
 /**
  * @typedef {object} Todo
@@ -67,6 +68,7 @@ export class TodoList {
         }
         const itemTodo = new TodoListItem(todo)
         itemTodo.prependTo(this.#list)
+        this.#onUpdate(todo)
 
     }
     /**
@@ -85,11 +87,20 @@ export class TodoList {
         this.#list.classList.remove(oldFilterItem)
         this.#list.classList.add(filterItem)
     }
+
+    #onUpdate(todo) {
+        this.#todos = [todo, ...this.#todos]
+        localStorage.setItem('todos', JSON.stringify(
+            this.#todos
+        ))
+    }
 }
 
 class TodoListItem {
     #element
+    #todo
     constructor(todo) {
+        this.#todo = todo
         const liTemplate = cloneTemplate('todolist-item').firstElementChild
         const id = `todo-${todo.id}`
         this.#element = liTemplate
@@ -108,7 +119,9 @@ class TodoListItem {
         input.addEventListener('change', (e) => this.onChecked(e))
         button.addEventListener('click', (e) => this.remove(e))
 
-
+        document.body.addEventListener('delete', (e) => {
+            console.log('Event deletes', e.detail)
+        })
 
 
     }
@@ -116,6 +129,7 @@ class TodoListItem {
      * @param {HTMLElement} element 
      */
     appendTo(element) {
+
         element.append(this.#element)
     }
 
@@ -123,6 +137,7 @@ class TodoListItem {
     * @param {HTMLElement} element 
     */
     prependTo(element) {
+
         element.prepend(this.#element)
     }
     /**
@@ -130,13 +145,27 @@ class TodoListItem {
      */
     remove(e) {
         e.preventDefault();
+        let todos = getItemFromLocalStorage('todos')
+        todos = todos.filter(t => t.id !== this.#todo.id)
+        localStorage.setItem('todos', JSON.stringify(
+            todos
+        ))
+        const event = new CustomEvent('delete', {
+            detail: e.currentTarget,
+            bubbles: true
+        })
+        this.#element.dispatchEvent(event)
         this.#element.remove()
     }
     /**
      * @param {InputEvent} e 
      */
     onChecked(e) {
-        console.log(e)
+        let todos = getItemFromLocalStorage('todos')
+        todos.forEach(t => {
+            if (t.id === this.#todo.id) t.completed = !t.completed
+        })
+        setItemToLocalStorage('todos', todos)
         /* ordre de la condition inversé, parceque l'input est checked avant de rentrer dans cette fonction */
         if (e.currentTarget.checked) {
             e.currentTarget.parentElement.classList.add('is_completed')
@@ -145,4 +174,6 @@ class TodoListItem {
         e.currentTarget.parentElement.classList.remove('is_completed')
 
     }
+
+
 }
