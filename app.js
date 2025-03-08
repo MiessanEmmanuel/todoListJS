@@ -15,6 +15,6 @@ try {
   })
   alertElement.innerText= 'Impossible de charger les élément'
   document.body.prepend(alertElement)
-
+  
   console.error(error)
 }

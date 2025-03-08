@@ -1,4 +1,4 @@
-import { createELement } from "../functions/dom.js"
+import { cloneTemplate, createELement } from "../functions/dom.js"
 
 /**
  * @typedef {object} Todo
@@ -21,30 +21,15 @@ export class TodoList {
     }
 
     /**
-     * @param {HTMLUListElement} element 
+     * @param {HTMLElement} element 
      */
     appendTo(element) {
-        element.innerHTML = `
-      <form class="d-flex pb-4" id="form">
-            <input required="" class="form-control" type="text" placeholder="Ajouter des tâches..." name="title"
-                data-com.bitwarden.browser.user-edited="yes">
-            <button class="btn btn-primary">Ajouter</button>
-        </form>
-        <main>
-            <div class="btn-group mb-4" role="group">
-                <button type="button" class=" btn btn-outline-primary active" data-filter="all">Toutes</button>
-                <button type="button" class=" btn btn-outline-primary" data-filter="todo">A faire</button>
-                <button type="button" class=" btn btn-outline-primary" data-filter="done">Faites</button>
-            </div>
-
-            <ul class="list-group todos">
-            </ul>
-        </main>
-      `
+        const template = cloneTemplate('todolist-layout')
+        element.append(template)
         this.#list = element.querySelector('.list-group')
-        for (let todo of this.#todos) {
-            todo = new TodoListItem(todo)
-            todo.appendTo(this.#list)
+        for (let todoItem of this.#todos) {
+            todoItem = new TodoListItem(todoItem)
+            todoItem.appendTo(this.#list)
         }
 
         const form = document.querySelector('#form')
@@ -105,34 +90,27 @@ export class TodoList {
 class TodoListItem {
     #element
     constructor(todo) {
+        const liTemplate = cloneTemplate('todolist-item').firstElementChild
         const id = `todo-${todo.id}`
-        const li = createELement('li', {
-            class: `todo list-group-item d-flex align-items-center ${todo.completed ? 'is_completed' : ''}`
-        })
-        const input = createELement('input', {
-            class: 'form-check-input',
-            id: id,
-            type: 'checkbox',
-            checked: todo.completed ? '' : null,
-        })
-        const label = createELement('label', {
-            class: 'ms-2 form-check-label',
-            for: id,
-        })
-        const button = createELement('button', {
-            class: 'ms-auto btn btn-danger btn-sm',
-        })
-        li.append(input)
+        this.#element = liTemplate
+        const input = this.#element.querySelector('input')
+        input.setAttribute('id', id)
+        if (todo.completed) {
+            input.setAttribute('checked', '')
+            liTemplate.classList.add('is_completed')
+        }
+
+        const label = this.#element.querySelector('label')
+        label.setAttribute('for', id)
         label.innerText = todo.title
-        li.append(label)
-        button.innerHTML = '<i class="bi-trash"></i>'
-        li.append(button)
+        const button = this.#element.querySelector('button')
+
         input.addEventListener('change', (e) => this.onChecked(e))
         button.addEventListener('click', (e) => this.remove(e))
 
 
 
-        this.#element = li
+
     }
     /**
      * @param {HTMLElement} element 
@@ -158,6 +136,7 @@ class TodoListItem {
      * @param {InputEvent} e 
      */
     onChecked(e) {
+        console.log(e)
         /* ordre de la condition inversé, parceque l'input est checked avant de rentrer dans cette fonction */
         if (e.currentTarget.checked) {
             e.currentTarget.parentElement.classList.add('is_completed')
